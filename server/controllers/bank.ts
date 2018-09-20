@@ -171,10 +171,11 @@ export default class BankCtrl extends BaseCtrl {
       res.status(200).json();
     } catch (error) {
       console.log(error);
+      res.sendStatus(403);
+    } finally {
       if (residentWalletHandle) await indy.closeWallet(residentWalletHandle);
       if (bankWalletHandle) await indy.closeWallet(bankWalletHandle);
       if (poolHandle) await indy.closePoolLedger(poolHandle);
-      res.sendStatus(403);
     }
   }
 

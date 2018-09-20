@@ -32,25 +32,27 @@ export default class adminCtrl extends BaseCtrl {
   //   "stewardDid": "Th7MpTaRZVRYnPiabds81Y"
   // }
   addTrustAnchor = async (req, res) => {
-    try {
-      let poolName = req.body.poolName;
-      let stewardName = req.body.stewardName;
-      let stewardDid = req.body.stewardDid;
-      let trustAnchorName = req.body.trustAnchorName;
-      let trustAnchorWalletConfig = { 'id': trustAnchorName + 'Wallet' };
-      let trustAnchorWalletCredentials = { 'key': trustAnchorName + '_key' };
+    let poolName = req.body.poolName;
+    let stewardName = req.body.stewardName;
+    let stewardDid = req.body.stewardDid;
+    let stewardWalletConfig = { 'id': stewardName + 'Wallet' };
+    let stewardWalletCredentials = { 'key': stewardName + '_key' };
+    let trustAnchorName = req.body.trustAnchorName;
+    let trustAnchorWalletConfig = { 'id': trustAnchorName + 'Wallet' };
+    let trustAnchorWalletCredentials = { 'key': trustAnchorName + '_key' };
+    let poolHandle, stewardWalletHandle;
+    let trustAnchorWallet, stewardTrustAnchorKey, trustAnchorStewardDid, trustAnchorStewardKey;
 
+    try {
       await indy.setProtocolVersion(2);
       //Open pool ledger
-      let poolHandle = await indy.openPoolLedger(poolName);
+      poolHandle = await indy.openPoolLedger(poolName);
 
-      let stewardWalletConfig = { 'id': stewardName + 'Wallet' };
-      let stewardWalletCredentials = { 'key': stewardName + '_key' };
       //Open Steward wallet
-      let stewardWalletHandle = await indy.openWallet(stewardWalletConfig, stewardWalletCredentials);
+      stewardWalletHandle = await indy.openWallet(stewardWalletConfig, stewardWalletCredentials);
 
       //Create Trust Anchor wallet and make a connection with Steward
-      let [trustAnchorWallet, stewardTrustAnchorKey, trustAnchorStewardDid, trustAnchorStewardKey] = await this.onboarding(poolHandle, "Sovrin Steward", stewardWalletHandle, stewardDid, trustAnchorName, null, trustAnchorWalletConfig, trustAnchorWalletCredentials);
+      [trustAnchorWallet, stewardTrustAnchorKey, trustAnchorStewardDid, trustAnchorStewardKey] = await this.onboarding(poolHandle, "Sovrin Steward", stewardWalletHandle, stewardDid, trustAnchorName, null, trustAnchorWalletConfig, trustAnchorWalletCredentials);
 
       //Create Trust Anchor DID and add it into ledger
       let trustAnchorDID = await this.getVerinym(poolHandle, "Sovrin Steward", stewardWalletHandle, stewardDid,
@@ -76,14 +78,15 @@ export default class adminCtrl extends BaseCtrl {
           trustAnchorStewardKey: trustAnchorStewardKey
         });
       } else {
-        if (trustAnchorWallet) await indy.closeWallet(trustAnchorWallet);
-        if (stewardWalletHandle) await indy.closeWallet(stewardWalletHandle);
-        if (poolHandle) await indy.closePoolLedger(poolHandle);
         res.sendStatus(403);
       }
     } catch (error) {
       console.log(error);
       res.sendStatus(403);
+    } finally {
+      if (trustAnchorWallet) await indy.closeWallet(trustAnchorWallet);
+      if (stewardWalletHandle) await indy.closeWallet(stewardWalletHandle);
+      if (poolHandle) await indy.closePoolLedger(poolHandle);
     }
   }
 
@@ -114,6 +117,7 @@ export default class adminCtrl extends BaseCtrl {
     }
 
     await indy.setProtocolVersion(2);
+
     //Open pool ledger
     let poolHandle = await indy.openPoolLedger(poolName);
 
@@ -140,6 +144,9 @@ export default class adminCtrl extends BaseCtrl {
       [stewardDid, stewardKey] = await indy.createAndStoreMyDid(stewardWalletHandle, {});
     } catch (e) {
       console.log(e);
+    } finally {
+      if (stewardWalletHandle) await indy.closeWallet(stewardWalletHandle);
+      if (poolHandle) await indy.closePoolLedger(poolHandle);
     }
 
     //Close steward wallet
@@ -156,8 +163,6 @@ export default class adminCtrl extends BaseCtrl {
         poolName: poolName
       });
     } else {
-      if (stewardWalletHandle) await indy.closeWallet(stewardWalletHandle);
-      if (poolHandle) await indy.closePoolLedger(poolHandle);
       res.sendStatus(403);
     }
   }
