@@ -1,6 +1,6 @@
 import Ledger from '../models/ledger';
 import BaseCtrl from './base';
-import indy from 'indy-sdk';
+import indy = require('indy-sdk');
 
 export default class LedgerCtrl extends BaseCtrl {
   model = Ledger;
