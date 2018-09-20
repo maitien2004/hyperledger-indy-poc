@@ -92,15 +92,16 @@ export default class adminCtrl extends BaseCtrl {
   createPoolLedger = async (req, res) => {
     let poolName = req.body.poolName;
     let stewardName = req.body.stewardName;
+    let stewardWalletConfig = { 'id': stewardName + 'Wallet' };
+    let stewardWalletCredentials = { 'key': stewardName + '_key' };
     let stewardDid, stewardKey;
 
-    // Create Pool Ledger Config
-    let poolGenesisTxnPath = await this.getPoolGenesisTxnPath(poolName);
-    let poolConfig = {
-      "genesis_txn": poolGenesisTxnPath
-    };
-
     try {
+      // Create Pool Ledger Config
+      let poolGenesisTxnPath = await this.getPoolGenesisTxnPath(poolName);
+      let poolConfig = {
+        "genesis_txn": poolGenesisTxnPath
+      };
       await indy.createPoolLedgerConfig(poolName, poolConfig);
     } catch (e) {
       if (e.message !== "PoolLedgerConfigAlreadyExistsError") {
@@ -114,11 +115,8 @@ export default class adminCtrl extends BaseCtrl {
     //Open pool ledger
     let poolHandle = await indy.openPoolLedger(poolName);
 
-    //Create Steward wallet
-    let stewardWalletConfig = { 'id': stewardName + 'Wallet' };
-    let stewardWalletCredentials = { 'key': stewardName + '_key' };
-
     try {
+      //Create Steward wallet
       await indy.createWallet(stewardWalletConfig, stewardWalletCredentials);
     } catch (e) {
       if (e.message !== "WalletAlreadyExistsError") {
@@ -130,12 +128,12 @@ export default class adminCtrl extends BaseCtrl {
 
     //Open Steward wallet
     let stewardWalletHandle = await indy.openWallet(stewardWalletConfig, stewardWalletCredentials);
-    let stewardDidInfo = {
-      'seed': '000000000000000000000000Steward1'
-    };
 
-    //Create and store DID into wallet
     try {
+      //Create and store DID into wallet
+      let stewardDidInfo = {
+        'seed': '000000000000000000000000Steward1'
+      };
       [stewardDid, stewardKey] = await indy.createAndStoreMyDid(stewardWalletHandle, stewardDidInfo);
     } catch (e) {
       console.log(e);
