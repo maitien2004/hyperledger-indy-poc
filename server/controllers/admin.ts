@@ -59,15 +59,6 @@ export default class adminCtrl extends BaseCtrl {
         stewardTrustAnchorKey, trustAnchorName, trustAnchorWallet, trustAnchorStewardDid,
         trustAnchorStewardKey, 'TRUST_ANCHOR');
 
-      //Close trust anchor wallet
-      await indy.closeWallet(trustAnchorWallet);
-
-      //Close steward wallet
-      await indy.closeWallet(stewardWalletHandle);
-
-      //Close pool ledger
-      await indy.closePoolLedger(poolHandle);
-
       if (trustAnchorDID) {
         res.status(200).json({
           trustAnchorName: trustAnchorName,
@@ -84,8 +75,13 @@ export default class adminCtrl extends BaseCtrl {
       console.log(error);
       res.sendStatus(403);
     } finally {
+      //Close trust anchor wallet
       if (trustAnchorWallet) await indy.closeWallet(trustAnchorWallet);
+
+      //Close steward wallet
       if (stewardWalletHandle) await indy.closeWallet(stewardWalletHandle);
+
+      //Close pool ledger
       if (poolHandle) await indy.closePoolLedger(poolHandle);
     }
   }
@@ -138,7 +134,7 @@ export default class adminCtrl extends BaseCtrl {
     //Open Steward wallet
     let stewardWalletHandle = await indy.openWallet(stewardWalletConfig, stewardWalletCredentials);
     let stewardDidInfo = {
-        'seed': '000000000000000000000000Steward1'
+      'seed': '000000000000000000000000Steward1'
     };
 
     //Create and store DID into wallet

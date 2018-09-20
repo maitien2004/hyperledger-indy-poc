@@ -89,18 +89,6 @@ export default class GovernmentCtrl extends BaseCtrl {
       await indy.proverStoreCredential(residentWalletHandle, null, idCardCredRequestMetadataJson,
         authdecryptedidCardCredJson, governmentIdCardCredDef, null);
 
-      //Close resident wallet
-      await indy.closeWallet(residentWalletHandle);
-
-      //Close bank wallet
-      await indy.closeWallet(bankWalletHandle);
-
-      //Close government wallet
-      await indy.closeWallet(governmentWalletHandle);
-
-      //Close pool ledger
-      await indy.closePoolLedger(poolHandle);
-
       res.status(200).json({
         residentWalletHandle: residentWalletHandle,
         residentWalletCredentials: residentWalletCredentials,
@@ -123,15 +111,16 @@ export default class GovernmentCtrl extends BaseCtrl {
       console.log(error);
       res.sendStatus(403);
     } finally {
+      //Close resident wallet
       if (residentWalletHandle)
         await indy.closeWallet(residentWalletHandle);
-
+      //Close bank wallet
       if (bankWalletHandle)
         await indy.closeWallet(bankWalletHandle);
-
+      //Close government wallet
       if (governmentWalletHandle)
         await indy.closeWallet(governmentWalletHandle);
-
+      //Close pool ledger
       if (poolHandle) await indy.closePoolLedger(poolHandle);
     }
   }
@@ -165,12 +154,6 @@ export default class GovernmentCtrl extends BaseCtrl {
       let [governmentIdCardCredDefId, governmentIdCardCredDefJson] = await indy.issuerCreateAndStoreCredentialDef(governmentWalletHandle, governmentDid, schema, 'TAG1', 'CL', '{"support_revocation": false}');
       await this.sendCredDef(poolHandle, governmentWalletHandle, governmentDid, governmentIdCardCredDefJson);
 
-      //Close government wallet
-      await indy.closeWallet(governmentWalletHandle);
-
-      //Close pool ledger
-      await indy.closePoolLedger(poolHandle);
-
       res.status(200).json({
         governmentIdCardCredDefId: governmentIdCardCredDefId,
         governmentIdCardCredDefJson: governmentIdCardCredDefJson
@@ -179,7 +162,9 @@ export default class GovernmentCtrl extends BaseCtrl {
       console.log(error);
       res.sendStatus(403);
     } finally {
+      //Close government wallet
       if (governmentWalletHandle) await indy.closeWallet(governmentWalletHandle);
+      //Close pool ledger
       if (poolHandle) await indy.closePoolLedger(poolHandle);
     }
   }
@@ -212,12 +197,6 @@ export default class GovernmentCtrl extends BaseCtrl {
       //Send schema to ledger
       await this.sendSchema(poolHandle, governmentWalletHandle, req.body.governmentDid, schema);
 
-      //Close government wallet
-      await indy.closeWallet(governmentWalletHandle);
-
-      //Close pool ledger
-      await indy.closePoolLedger(poolHandle);
-
       res.status(200).json({
         schemaId: schemaId,
         schemaData: schema
@@ -226,7 +205,9 @@ export default class GovernmentCtrl extends BaseCtrl {
       console.log(error);
       res.sendStatus(403);
     } finally {
+      //Close government wallet
       if (governmentWalletHandle) await indy.closeWallet(governmentWalletHandle);
+      //Close pool ledger
       if (poolHandle) await indy.closePoolLedger(poolHandle);
     }
   }

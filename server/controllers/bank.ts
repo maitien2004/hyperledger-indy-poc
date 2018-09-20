@@ -158,23 +158,16 @@ export default class BankCtrl extends BaseCtrl {
       assert(req.body.data.created_at === decryptedData['revealed_attrs']['attr5_referent']['raw']);
 
       await indy.verifierVerifyProof(IdCardApplicationProofRequestJson, decryptedIdCardApplicationProofJson, schemasJson, credDefsJson, revocRefDefsJson, revocRegsJson);
-
-      //Close resident wallet
-      await indy.closeWallet(residentWalletHandle);
-
-      //Close bank wallet
-      await indy.closeWallet(bankWalletHandle);
-
-      //Close pool ledger
-      await indy.closePoolLedger(poolHandle);
-
       res.status(200).json();
     } catch (error) {
       console.log(error);
       res.sendStatus(403);
     } finally {
+      //Close resident wallet
       if (residentWalletHandle) await indy.closeWallet(residentWalletHandle);
+      //Close bank wallet
       if (bankWalletHandle) await indy.closeWallet(bankWalletHandle);
+      //Close pool ledger
       if (poolHandle) await indy.closePoolLedger(poolHandle);
     }
   }
