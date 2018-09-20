@@ -41,14 +41,18 @@ export default class adminCtrl extends BaseCtrl {
       let trustAnchorWalletCredentials = { 'key': trustAnchorName + '_key' };
 
       await indy.setProtocolVersion(2);
+      //Open pool ledger
       let poolHandle = await indy.openPoolLedger(poolName);
 
       let stewardWalletConfig = { 'id': stewardName + 'Wallet' };
       let stewardWalletCredentials = { 'key': stewardName + '_key' };
+      //Open Steward wallet
       let stewardWalletHandle = await indy.openWallet(stewardWalletConfig, stewardWalletCredentials);
 
+      //Create Trust Anchor wallet and make a connection with Steward
       let [trustAnchorWallet, stewardTrustAnchorKey, trustAnchorStewardDid, trustAnchorStewardKey] = await this.onboarding(poolHandle, "Sovrin Steward", stewardWalletHandle, stewardDid, trustAnchorName, null, trustAnchorWalletConfig, trustAnchorWalletCredentials);
 
+      //Create Trust Anchor DID and add it into ledger
       let trustAnchorDID = await this.getVerinym(poolHandle, "Sovrin Steward", stewardWalletHandle, stewardDid,
         stewardTrustAnchorKey, trustAnchorName, trustAnchorWallet, trustAnchorStewardDid,
         trustAnchorStewardKey, 'TRUST_ANCHOR');
@@ -93,6 +97,8 @@ export default class adminCtrl extends BaseCtrl {
   createPoolLedger = async (req, res) => {
     let poolName = req.body.poolName;
     let stewardName = req.body.stewardName;
+
+    // Create Pool Ledger Config
     let poolGenesisTxnPath = await this.getPoolGenesisTxnPath(poolName);
     let poolConfig = {
       "genesis_txn": poolGenesisTxnPath
@@ -108,9 +114,10 @@ export default class adminCtrl extends BaseCtrl {
     }
 
     await indy.setProtocolVersion(2);
-
+    //Open pool ledger
     let poolHandle = await indy.openPoolLedger(poolName);
 
+    //Create Steward wallet
     let stewardWalletConfig = { 'id': stewardName + 'Wallet' };
     let stewardWalletCredentials = { 'key': stewardName + '_key' };
 
@@ -124,12 +131,14 @@ export default class adminCtrl extends BaseCtrl {
       }
     }
 
+    //Open Steward wallet
     let stewardWalletHandle = await indy.openWallet(stewardWalletConfig, stewardWalletCredentials);
     let stewardDidInfo = {
       'seed': '000000000000000000000000Steward1'
     };
-    let stewardDid, stewardKey;
 
+    //Create and store DID into wallet
+    let stewardDid, stewardKey;
     try {
       [stewardDid, stewardKey] = await indy.createAndStoreMyDid(stewardWalletHandle, stewardDidInfo);
     } catch (e) {
