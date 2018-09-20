@@ -135,7 +135,8 @@ curl -sf -L https://static.rust-lang.org/rustup.sh | sh
 
 # Install libsodium
 cd ~/ && \
-  curl https://github.com/jedisct1/libsodium/releases/download/1.0.14/libsodium-1.0.14.tar.gz | tar -xz && \
+  # curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.14.tar.gz | tar -xz && \
+  wget https://github.com/jedisct1/libsodium/releases/download/1.0.14/libsodium-1.0.14.tar.gz && tar -xzf libsodium-1.0.14.tar.gz && \
    cd ~/libsodium-1.0.14 && \
    ./configure --disable-shared && \
    make && \
