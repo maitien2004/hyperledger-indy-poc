@@ -133,14 +133,11 @@ export default class adminCtrl extends BaseCtrl {
 
     //Open Steward wallet
     let stewardWalletHandle = await indy.openWallet(stewardWalletConfig, stewardWalletCredentials);
-    let stewardDidInfo = {
-      'seed': '000000000000000000000000Steward1'
-    };
 
     //Create and store DID into wallet
     let stewardDid, stewardKey;
     try {
-      [stewardDid, stewardKey] = await indy.createAndStoreMyDid(stewardWalletHandle, stewardDidInfo);
+      [stewardDid, stewardKey] = await indy.createAndStoreMyDid(stewardWalletHandle, {});
     } catch (e) {
       console.log(e);
     }
