@@ -8,13 +8,21 @@ export default class LedgerCtrl extends BaseCtrl {
   delete = (req, res) => {
     this.model.findOne({ _id: req.params.id }, (err, item) => {
       try {
+        //Delete wallet
         if (item.stewardName) {
           let walletConfig = { 'id': item.stewardName + 'Wallet' };
           let walletCredentials = { 'key': item.stewardName + '_key' };
           indy.deleteWallet(walletConfig, walletCredentials);
         }
+
+        //Delete pool
         if (item.poolName) indy.deletePoolLedgerConfig(item.poolName);
-        res.status(200).json(item);
+
+        //Delete on DB
+        this.model.findOneAndRemove({ _id: req.params.id }, (err) => {
+          if (err) { return console.error(err); }
+          res.sendStatus(200);
+        });
       } catch (e) {
         console.log(e);
         res.status(404).json({
