@@ -40,7 +40,7 @@ export default class adminCtrl extends BaseCtrl {
     let trustAnchorName = req.body.trustAnchorName;
     let trustAnchorWalletConfig = { 'id': trustAnchorName + 'Wallet' };
     let trustAnchorWalletCredentials = { 'key': trustAnchorName + '_key' };
-    let poolHandle, stewardWalletHandle;
+    let poolHandle, stewardWalletHandle, trustAnchorDID;
     let trustAnchorWallet, stewardTrustAnchorKey, trustAnchorStewardDid, trustAnchorStewardKey;
 
     try {
@@ -55,22 +55,18 @@ export default class adminCtrl extends BaseCtrl {
       [trustAnchorWallet, stewardTrustAnchorKey, trustAnchorStewardDid, trustAnchorStewardKey] = await this.onboarding(poolHandle, "Sovrin Steward", stewardWalletHandle, stewardDid, trustAnchorName, null, trustAnchorWalletConfig, trustAnchorWalletCredentials);
 
       //Create Trust Anchor DID and add it into ledger
-      let trustAnchorDID = await this.getVerinym(poolHandle, "Sovrin Steward", stewardWalletHandle, stewardDid,
+      trustAnchorDID = await this.getVerinym(poolHandle, "Sovrin Steward", stewardWalletHandle, stewardDid,
         stewardTrustAnchorKey, trustAnchorName, trustAnchorWallet, trustAnchorStewardDid,
         trustAnchorStewardKey, 'TRUST_ANCHOR');
 
-      if (trustAnchorDID) {
-        res.status(200).json({
-          trustAnchorName: trustAnchorName,
-          trustAnchorDID: trustAnchorDID,
-          trustAnchorWallet: trustAnchorWalletConfig.id,
-          stewardTrustAnchorKey: stewardTrustAnchorKey,
-          trustAnchorStewardDid: trustAnchorStewardDid,
-          trustAnchorStewardKey: trustAnchorStewardKey
-        });
-      } else {
-        res.sendStatus(403);
-      }
+      res.status(200).json({
+        trustAnchorName: trustAnchorName,
+        trustAnchorDID: trustAnchorDID,
+        trustAnchorWallet: trustAnchorWalletConfig.id,
+        stewardTrustAnchorKey: stewardTrustAnchorKey,
+        trustAnchorStewardDid: trustAnchorStewardDid,
+        trustAnchorStewardKey: trustAnchorStewardKey
+      });
     } catch (error) {
       console.log(error);
       res.sendStatus(403);
@@ -96,6 +92,7 @@ export default class adminCtrl extends BaseCtrl {
   createPoolLedger = async (req, res) => {
     let poolName = req.body.poolName;
     let stewardName = req.body.stewardName;
+    let stewardDid, stewardKey;
 
     // Create Pool Ledger Config
     let poolGenesisTxnPath = await this.getPoolGenesisTxnPath(poolName);
@@ -138,7 +135,6 @@ export default class adminCtrl extends BaseCtrl {
     };
 
     //Create and store DID into wallet
-    let stewardDid, stewardKey;
     try {
       [stewardDid, stewardKey] = await indy.createAndStoreMyDid(stewardWalletHandle, stewardDidInfo);
     } catch (e) {
@@ -147,21 +143,16 @@ export default class adminCtrl extends BaseCtrl {
     } finally {
       //Close steward wallet
       if (stewardWalletHandle) await indy.closeWallet(stewardWalletHandle);
-
       //Close pool ledger  
       if (poolHandle) await indy.closePoolLedger(poolHandle);
     }
 
-    if (stewardDid && stewardKey) {
-      res.status(200).json({
-        stewardName: stewardName,
-        stewardDid: stewardDid,
-        stewardKey: stewardKey,
-        poolName: poolName
-      });
-    } else {
-      res.sendStatus(403);
-    }
+    res.status(200).json({
+      stewardName: stewardName,
+      stewardDid: stewardDid,
+      stewardKey: stewardKey,
+      poolName: poolName
+    });
   }
 
   // Function for create stuff
