@@ -140,12 +140,15 @@ cd ~/ && \
    cd ~/libsodium-1.0.14 && \
    ./configure --disable-shared && \
    make && \
-   sudo make install && \
-   cd ~/
+   sudo make install
 
 # Build Indy SDK
-cd ~/ && \
-	git clone https://github.com/hyperledger/indy-sdk.git && \
+cd ~/
+if [ -d indy-sdk ] ; then \
+  rm -rf indy-sdk
+fi
+
+git clone https://github.com/hyperledger/indy-sdk.git && \
 	cd ./indy-sdk && \
 	git checkout tags/v1.6.2 && \
 	cd ./libindy && \
