@@ -144,16 +144,14 @@ export default class adminCtrl extends BaseCtrl {
       [stewardDid, stewardKey] = await indy.createAndStoreMyDid(stewardWalletHandle, {});
     } catch (e) {
       console.log(e);
+      res.sendStatus(403);
     } finally {
+      //Close steward wallet
       if (stewardWalletHandle) await indy.closeWallet(stewardWalletHandle);
+
+      //Close pool ledger  
       if (poolHandle) await indy.closePoolLedger(poolHandle);
     }
-
-    //Close steward wallet
-    await indy.closeWallet(stewardWalletHandle);
-
-    //Close pool ledger
-    await indy.closePoolLedger(poolHandle);
 
     if (stewardDid && stewardKey) {
       res.status(200).json({
