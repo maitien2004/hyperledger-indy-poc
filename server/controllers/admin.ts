@@ -50,7 +50,16 @@ export default class adminCtrl extends BaseCtrl {
       //Open Steward wallet
       //Create Trust Anchor wallet and make a connection with Steward
       //Create Trust Anchor DID and add it into ledger
+
       //Response to client
+      res.status(200).json({
+        trustAnchorName: trustAnchorName,
+        trustAnchorDID: trustAnchorDID,
+        trustAnchorWallet: trustAnchorWalletConfig.id,
+        stewardTrustAnchorKey: stewardTrustAnchorKey,
+        trustAnchorStewardDid: trustAnchorStewardDid,
+        trustAnchorStewardKey: trustAnchorStewardKey
+      });
     } catch (error) {
       console.log(error);
       res.sendStatus(403);
@@ -87,7 +96,14 @@ export default class adminCtrl extends BaseCtrl {
       //Create Steward wallet
       //Open Steward wallet
       //Create and store DID into wallet
+
       //Response to client
+      res.status(200).json({
+        stewardName: stewardName,
+        stewardDid: stewardDid,
+        stewardKey: stewardKey,
+        poolName: poolName
+      });
     } catch (e) {
       console.log(e);
       res.sendStatus(403);
