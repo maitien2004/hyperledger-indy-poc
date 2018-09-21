@@ -45,38 +45,20 @@ export default class adminCtrl extends BaseCtrl {
 
     try {
       await indy.setProtocolVersion(2);
+
       //Open pool ledger
-      poolHandle = await indy.openPoolLedger(poolName);
-
       //Open Steward wallet
-      stewardWalletHandle = await indy.openWallet(stewardWalletConfig, stewardWalletCredentials);
-
       //Create Trust Anchor wallet and make a connection with Steward
-      [trustAnchorWallet, stewardTrustAnchorKey, trustAnchorStewardDid, trustAnchorStewardKey] = await this.onboarding(poolHandle, "Sovrin Steward", stewardWalletHandle, stewardDid, trustAnchorName, null, trustAnchorWalletConfig, trustAnchorWalletCredentials);
-
       //Create Trust Anchor DID and add it into ledger
-      trustAnchorDID = await this.getVerinym(poolHandle, "Sovrin Steward", stewardWalletHandle, stewardDid,
-        stewardTrustAnchorKey, trustAnchorName, trustAnchorWallet, trustAnchorStewardDid,
-        trustAnchorStewardKey, 'TRUST_ANCHOR');
-
-      res.status(200).json({
-        trustAnchorName: trustAnchorName,
-        trustAnchorDID: trustAnchorDID,
-        trustAnchorWallet: trustAnchorWalletConfig.id,
-        stewardTrustAnchorKey: stewardTrustAnchorKey,
-        trustAnchorStewardDid: trustAnchorStewardDid,
-        trustAnchorStewardKey: trustAnchorStewardKey
-      });
+      //Response to client
     } catch (error) {
       console.log(error);
       res.sendStatus(403);
     } finally {
       //Close trust anchor wallet
       if (trustAnchorWallet) await indy.closeWallet(trustAnchorWallet);
-
       //Close steward wallet
       if (stewardWalletHandle) await indy.closeWallet(stewardWalletHandle);
-
       //Close pool ledger
       if (poolHandle) await indy.closePoolLedger(poolHandle);
     }
@@ -95,46 +77,17 @@ export default class adminCtrl extends BaseCtrl {
     let stewardWalletConfig = { 'id': stewardName + 'Wallet' };
     let stewardWalletCredentials = { 'key': stewardName + '_key' };
     let stewardDid, stewardKey;
+    let poolHandle, stewardWalletHandle;
 
     try {
-      // Create Pool Ledger Config
-      let poolGenesisTxnPath = await this.getPoolGenesisTxnPath(poolName);
-      let poolConfig = {
-        "genesis_txn": poolGenesisTxnPath
-      };
-      await indy.createPoolLedgerConfig(poolName, poolConfig);
-    } catch (e) {
-      if (e.message !== "PoolLedgerConfigAlreadyExistsError") {
-        console.log(e);
-        res.sendStatus(403);
-      }
-    }
+      await indy.setProtocolVersion(2);
 
-    await indy.setProtocolVersion(2);
-
-    //Open pool ledger
-    let poolHandle = await indy.openPoolLedger(poolName);
-
-    try {
+      //Create Pool Ledger Config
+      //Open pool ledger
       //Create Steward wallet
-      await indy.createWallet(stewardWalletConfig, stewardWalletCredentials);
-    } catch (e) {
-      if (e.message !== "WalletAlreadyExistsError") {
-        console.log(e);
-        if (poolHandle) await indy.closePoolLedger(poolHandle);
-        res.sendStatus(403);
-      }
-    }
-
-    //Open Steward wallet
-    let stewardWalletHandle = await indy.openWallet(stewardWalletConfig, stewardWalletCredentials);
-
-    try {
+      //Open Steward wallet
       //Create and store DID into wallet
-      let stewardDidInfo = {
-        'seed': '000000000000000000000000Steward1'
-      };
-      [stewardDid, stewardKey] = await indy.createAndStoreMyDid(stewardWalletHandle, stewardDidInfo);
+      //Response to client
     } catch (e) {
       console.log(e);
       res.sendStatus(403);
@@ -144,13 +97,6 @@ export default class adminCtrl extends BaseCtrl {
       //Close pool ledger  
       if (poolHandle) await indy.closePoolLedger(poolHandle);
     }
-
-    res.status(200).json({
-      stewardName: stewardName,
-      stewardDid: stewardDid,
-      stewardKey: stewardKey,
-      poolName: poolName
-    });
   }
 
   // Function for create stuff
