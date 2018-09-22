@@ -184,8 +184,6 @@ export class GovernmentComponent implements OnInit {
       governmentIdCardCredDefId: this.credentialDefinitions[0].governmentIdCardCredDefId,
       governmentDid: 'null',
       governmentName: 'null',
-      bankName: 'null',
-      bankDid: 'null',
       idCardCredValues: {
         id: { raw: this.residentForm.value.id, encoded: '1' },
         name: { raw: this.residentForm.value.name, encoded: '1' },
@@ -204,9 +202,6 @@ export class GovernmentComponent implements OnInit {
       if (anchorName === 'government' || anchorName === 'gov') {
         idCard.governmentDid = TrustAnchor.trustAnchorDID;
         idCard.governmentName = TrustAnchor.trustAnchorName;
-      } else if (anchorName === 'banking' || anchorName === 'bank') {
-        idCard.bankName = TrustAnchor.trustAnchorName;
-        idCard.bankDid = TrustAnchor.trustAnchorDID;
       }
     });
 
