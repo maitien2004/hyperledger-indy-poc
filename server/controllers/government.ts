@@ -30,7 +30,6 @@ export default class GovernmentCtrl extends BaseCtrl {
   //   "governmentName": "government",
   //   "governmentDid": "BMkm2SzCDifFVFWGu9PEGY",
   //   "governmentIdCardCredDefId": "BMkm2SzCDifFVFWGu9PEGY:3:CL:810",
-  //   "bankName": "bank",
   //   "idCardCredValues": {
   //         "resident_first_name": { "raw": "resident", "encoded": "1139481716457488690172217916278103335" },
   //         "resident_last_name": { "raw": "Garcia", "encoded": "5321642780241790123587902456789123452" },
@@ -48,13 +47,10 @@ export default class GovernmentCtrl extends BaseCtrl {
     let governmentDid = req.body.governmentDid;
     let governmentWalletConfig = { 'id': governmentName + 'Wallet' };
     let governmentWalletCredentials = { 'key': governmentName + '_key' };
-    let bankName = req.body.bankName;
-    let bankWalletConfig = { 'id': bankName + 'Wallet' };
-    let bankWalletCredentials = { 'key': bankName + '_key' };
     let residentWalletConfig = { 'id': req.body.residentName + 'Wallet' };
     let residentWalletCredentials = { 'key': req.body.residentName + '_key' };
     let residentWalletHandle, governmentResidentKey, residentGovernmentDid, residentGovernmentKey, governmentResidentConnectionResponse;
-    let poolHandle, governmentWalletHandle, bankWalletHandle;
+    let poolHandle, governmentWalletHandle;
     let idCardCredOfferJson, residentGovernmentVerkey, authcryptedIdCardCredOffer, residentMasterSecretId;
     let governmentResidentVerkey, authdecryptedIdCardCredOfferJson, authdecryptedIdCardCredOffer, governmentIdCardCredDef;
     let idCardCredRequestJson, idCardCredRequestMetadataJson, authcryptedIdCardCredRequest, authdecryptedIdCardCredRequestJson;
@@ -68,9 +64,6 @@ export default class GovernmentCtrl extends BaseCtrl {
 
       //Open government wallet
       governmentWalletHandle = await indy.openWallet(governmentWalletConfig, governmentWalletCredentials);
-
-      //Open bank wallet
-      bankWalletHandle = await indy.openWallet(bankWalletConfig, bankWalletCredentials);
 
       //Government to make a connection with resident
       [residentWalletHandle, governmentResidentKey, residentGovernmentDid, residentGovernmentKey, governmentResidentConnectionResponse] = await this.onboarding(poolHandle, "Government", governmentWalletHandle, governmentDid, "Personal", null, residentWalletConfig, residentWalletCredentials);
@@ -140,9 +133,6 @@ export default class GovernmentCtrl extends BaseCtrl {
       //Close resident wallet
       if (residentWalletHandle)
         await indy.closeWallet(residentWalletHandle);
-      //Close bank wallet
-      if (bankWalletHandle)
-        await indy.closeWallet(bankWalletHandle);
       //Close government wallet
       if (governmentWalletHandle)
         await indy.closeWallet(governmentWalletHandle);
