@@ -92,8 +92,8 @@ export default class BankCtrl extends BaseCtrl {
         }
       };
 
-      //Resident get DID key
-      let residentBankVerkey = await indy.keyForDid(poolHandle, residentWalletHandle, bankResidentConnectionResponse['did']);
+      //Bank get DID key
+      let residentBankVerkey = await indy.keyForDid(poolHandle, bankWalletHandle, bankResidentConnectionResponse['did']);
 
       //Bank encrypt Loan Application Proof Request and send it to Resident
       let authcryptedIdCardApplicationProofRequestJson = await indy.cryptoAuthCrypt(bankWalletHandle, bankResidentKey, residentBankVerkey, Buffer.from(JSON.stringify(IdCardApplicationProofRequestJson), 'utf8'));
