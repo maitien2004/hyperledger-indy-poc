@@ -36,25 +36,26 @@ export default class BankCtrl extends BaseCtrl {
   //   "data": {}
   // }
   applyLoan = async (req, res) => {
+    let poolName = req.body.poolName;
+    let bankName = req.body.bankName;
     let poolHandle, bankWalletHandle, residentWalletHandle;
-    try {
-      let poolName = req.body.poolName;
-      let bankName = req.body.bankName;
+    let bankWalletConfig = { 'id': bankName + 'Wallet' };
+    let bankWalletCredentials = { 'key': bankName + '_key' };
+    let residentWalletConfig = { 'id': req.body.residentName + 'Wallet' };
+    let residentWalletCredentials = { 'key': req.body.residentName + '_key' };
 
+    try {
       await indy.setProtocolVersion(2);
       //Open pool ledger
-      poolHandle = await indy.openPoolLedger(req.body.poolName);
+      poolHandle = await indy.openPoolLedger(poolName);
 
       //Open bank wallet
-      let bankWalletConfig = { 'id': bankName + 'Wallet' };
-      let bankWalletCredentials = { 'key': bankName + '_key' };
       bankWalletHandle = await indy.openWallet(bankWalletConfig, bankWalletCredentials);
 
       //Open bank wallet
-      let residentWalletConfig = { 'id': req.body.residentName + 'Wallet' };
-      let residentWalletCredentials = { 'key': req.body.residentName + '_key' };
       residentWalletHandle = await indy.openWallet(residentWalletConfig, residentWalletCredentials);
 
+      //Bank to make a connection with resident
       let [, bankResidentKey, , residentBankKey, bankResidentConnectionResponse] = await this.onboarding(poolHandle, bankName, bankWalletHandle, req.body.bankDid, req.body.data.name, residentWalletHandle, residentWalletConfig, residentWalletCredentials);
 
       let IdCardApplicationProofRequestJson = {
@@ -91,9 +92,16 @@ export default class BankCtrl extends BaseCtrl {
         }
       };
 
-      let residentBankVerkey = await indy.keyForDid(poolHandle, bankWalletHandle, bankResidentConnectionResponse['did']);
+      //Resident get DID key
+      let residentBankVerkey = await indy.keyForDid(poolHandle, residentWalletHandle, bankResidentConnectionResponse['did']);
+
+      //Bank encrypt Loan Application Proof Request and send it to Resident
       let authcryptedIdCardApplicationProofRequestJson = await indy.cryptoAuthCrypt(bankWalletHandle, bankResidentKey, residentBankVerkey, Buffer.from(JSON.stringify(IdCardApplicationProofRequestJson), 'utf8'));
+
+      //Resident received Loan Application Proof Request and decrypt it
       let [bankResidentVerkey, authdecryptedIdCardApplicationProofRequestJson] = await this.authDecrypt(residentWalletHandle, residentBankKey, authcryptedIdCardApplicationProofRequestJson);
+
+      //Resident search credential for Loan Application Proof Request
       let searchForIdCardApplicationProofRequest = await indy.proverSearchCredentialsForProofReq(residentWalletHandle, authdecryptedIdCardApplicationProofRequestJson, null)
       let credsForIdCardApplicationProofRequest = await indy.proverFetchCredentialsForProofReq(searchForIdCardApplicationProofRequest, 'attr1_referent', 100)
       let credForAttr1 = credsForIdCardApplicationProofRequest[0]['cred_info'];
@@ -123,6 +131,7 @@ export default class BankCtrl extends BaseCtrl {
       credsForIdCardApplicationProof[`${credForAttr5['referent']}`] = credForAttr5;
       credsForIdCardApplicationProof[`${credForPredicate1['referent']}`] = credForPredicate1;
 
+      //Resident get Claim Definition from ledger
       let [schemasJson, credDefsJson, revocStatesJson] = await this.proverGetEntitiesFromLedger(poolHandle, req.body.residentGovernmentDid, credsForIdCardApplicationProof, 'Personal');
 
       let IdCardApplicationRequestedCredsJson = {
@@ -138,18 +147,23 @@ export default class BankCtrl extends BaseCtrl {
         'requested_predicates': { 'predicate1_referent': { 'cred_id': credForPredicate1['referent'] } }
       };
 
+      //Resident create Loan Application Proof
       let IdCardApplicationProofJson = await indy.proverCreateProof(residentWalletHandle, authdecryptedIdCardApplicationProofRequestJson,
         IdCardApplicationRequestedCredsJson, req.body.residentMasterSecretId,
         schemasJson, credDefsJson, revocStatesJson);
 
+      //Resident encrypt Loan Application Proof and send it to Bank
       let authcryptedIdCardApplicationProofJson = await indy.cryptoAuthCrypt(residentWalletHandle, residentBankKey, bankResidentVerkey, Buffer.from(JSON.stringify(IdCardApplicationProofJson), 'utf8'));
 
+      //Bank received Loan Application Proof and decrypt it
       let decryptedIdCardApplicationProofJson, decryptedIdCardApplicationProof;
       [, decryptedIdCardApplicationProofJson, decryptedIdCardApplicationProof] = await this.authDecrypt(bankWalletHandle, bankResidentKey, authcryptedIdCardApplicationProofJson);
 
+      //Bank get Schemas, Credential Definitions and Revocation Registries from Ledger required for Proof verifying
       let revocRefDefsJson, revocRegsJson;
-      [schemasJson, credDefsJson, revocRefDefsJson, revocRegsJson] = await this.verifierGetEntitiesFromLedger(poolHandle, req.body.bankDid, decryptedIdCardApplicationProof['identifiers'], 'Bank');
+      [schemasJson, credDefsJson, ,] = await this.verifierGetEntitiesFromLedger(poolHandle, req.body.bankDid, decryptedIdCardApplicationProof['identifiers'], 'Bank');
 
+      //Validate data from client provided and data from government provided
       let decryptedData = decryptedIdCardApplicationProof['requested_proof'];
       assert(req.body.data.id === decryptedData['revealed_attrs']['attr1_referent']['raw']);
       assert(req.body.data.name === decryptedData['revealed_attrs']['attr2_referent']['raw']);
@@ -157,7 +171,10 @@ export default class BankCtrl extends BaseCtrl {
       assert(req.body.data.gender === decryptedData['self_attested_attrs']['attr4_referent']);
       assert(req.body.data.created_at === decryptedData['revealed_attrs']['attr5_referent']['raw']);
 
+      //Bank verify Loan Application Proof from Resident
       await indy.verifierVerifyProof(IdCardApplicationProofRequestJson, decryptedIdCardApplicationProofJson, schemasJson, credDefsJson, revocRefDefsJson, revocRegsJson);
+
+      //Response to client
       res.status(200).json();
     } catch (error) {
       console.log(error);

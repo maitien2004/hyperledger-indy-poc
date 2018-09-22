@@ -47,9 +47,17 @@ export default class adminCtrl extends BaseCtrl {
       await indy.setProtocolVersion(2);
 
       //Open pool ledger
+      poolHandle = await indy.openPoolLedger(poolName);
+
       //Open Steward wallet
+      stewardWalletHandle = await indy.openWallet(stewardWalletConfig, stewardWalletCredentials);
+
       //Create Trust Anchor wallet and make a connection with Steward
+      [trustAnchorWallet, stewardTrustAnchorKey, trustAnchorStewardDid, trustAnchorStewardKey] = await this.onboarding(poolHandle, "Sovrin Steward", stewardWalletHandle, stewardDid, trustAnchorName, null, trustAnchorWalletConfig, trustAnchorWalletCredentials);
+
       //Create Trust Anchor DID and add it into ledger
+      trustAnchorDID = await this.getVerinym(poolHandle, "Sovrin Steward", stewardWalletHandle, stewardDid, stewardTrustAnchorKey,
+        trustAnchorName, trustAnchorWallet, trustAnchorStewardDid, trustAnchorStewardKey, 'TRUST_ANCHOR');
 
       //Response to client
       res.status(200).json({
@@ -92,10 +100,49 @@ export default class adminCtrl extends BaseCtrl {
       await indy.setProtocolVersion(2);
 
       //Create Pool Ledger Config
+      try {
+        // Create Pool Ledger Config
+        let poolGenesisTxnPath = await this.getPoolGenesisTxnPath(poolName);
+        let poolConfig = {
+          "genesis_txn": poolGenesisTxnPath
+        };
+        await indy.createPoolLedgerConfig(poolName, poolConfig);
+      } catch (e) {
+        if (e.message !== "PoolLedgerConfigAlreadyExistsError") {
+          console.log(e);
+          res.sendStatus(403);
+        }
+      }
+
       //Open pool ledger
+      poolHandle = await indy.openPoolLedger(poolName);
+
       //Create Steward wallet
+      try {
+        await indy.createWallet(stewardWalletConfig, stewardWalletCredentials);
+      } catch (e) {
+        if (e.message !== "WalletAlreadyExistsError") {
+          console.log(e);
+          if (poolHandle) await indy.closePoolLedger(poolHandle);
+          res.sendStatus(403);
+        }
+      }
+
       //Open Steward wallet
+      stewardWalletHandle = await indy.openWallet(stewardWalletConfig, stewardWalletCredentials);
+
       //Create and store DID into wallet
+      try {
+        let stewardDidInfo = {
+          'seed': '000000000000000000000000Steward1'
+        };
+        [stewardDid, stewardKey] = await indy.createAndStoreMyDid(stewardWalletHandle, stewardDidInfo);
+      } catch (e) {
+        if (e.message !== "DidAlreadyExistsError") {
+          console.log(e);
+          res.sendStatus(403);
+        }
+      }
 
       //Response to client
       res.status(200).json({
