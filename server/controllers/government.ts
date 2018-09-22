@@ -69,43 +69,21 @@ export default class GovernmentCtrl extends BaseCtrl {
       [residentWalletHandle, governmentResidentKey, residentGovernmentDid, residentGovernmentKey, governmentResidentConnectionResponse] = await this.onboarding(poolHandle, "Government", governmentWalletHandle, governmentDid, "Personal", null, residentWalletConfig, residentWalletCredentials);
 
       //Government create ID Card Credential for resident
-      idCardCredOfferJson = await indy.issuerCreateCredentialOffer(governmentWalletHandle, req.body.governmentIdCardCredDefId);
-
       //Government encrypt and send ID Card Credential to resident
-      residentGovernmentVerkey = await indy.keyForDid(poolHandle, residentWalletHandle, governmentResidentConnectionResponse['did']);
-      authcryptedIdCardCredOffer = await indy.cryptoAuthCrypt(governmentWalletHandle, governmentResidentKey, residentGovernmentVerkey, Buffer.from(JSON.stringify(idCardCredOfferJson), 'utf8'));
 
       //Resident received ID Card Credential and decrypt it
-      [governmentResidentVerkey, authdecryptedIdCardCredOfferJson, authdecryptedIdCardCredOffer] = await this.authDecrypt(residentWalletHandle, residentGovernmentKey, authcryptedIdCardCredOffer);
-
       //Resident create and store Master Secret key into Resisent's wallet
-      residentMasterSecretId = await indy.proverCreateMasterSecret(residentWalletHandle, null);
 
       //Resident get Government - ID Card Credential from ledger
-      [req.body.governmentIdCardCredDefId, governmentIdCardCredDef] = await this.getCredDef(poolHandle, residentGovernmentDid, authdecryptedIdCardCredOffer['cred_def_id']);
-
       //Resident create ID Card Credential Request for Government
-      [idCardCredRequestJson, idCardCredRequestMetadataJson] = await indy.proverCreateCredentialReq(residentWalletHandle, residentGovernmentDid, authdecryptedIdCardCredOfferJson, governmentIdCardCredDef, residentMasterSecretId);
-
       //Resident encrypt ID Card Credential Request and send it to Government
-      authcryptedIdCardCredRequest = await indy.cryptoAuthCrypt(residentWalletHandle, residentGovernmentKey, governmentResidentVerkey, Buffer.from(JSON.stringify(idCardCredRequestJson), 'utf8'));
 
       //Governemt received ID Card Credential Request and decrypt it
-      [residentGovernmentVerkey, authdecryptedIdCardCredRequestJson] = await this.authDecrypt(governmentWalletHandle, governmentResidentKey, authcryptedIdCardCredRequest);
-
       //Goverment create ID Card Credential for Resident
-      idCardCredValues = req.body.idCardCredValues;
-      [idCardCredJson] = await indy.issuerCreateCredential(governmentWalletHandle, idCardCredOfferJson, authdecryptedIdCardCredRequestJson, idCardCredValues, null, -1);
-
       //Government encrypt ID Card Credential Request and send it to Resident
-      authcryptedidCardCredJson = await indy.cryptoAuthCrypt(governmentWalletHandle, governmentResidentKey, residentGovernmentVerkey, Buffer.from(JSON.stringify(idCardCredJson), 'utf8'));
 
       //Resident received ID Card Credential Request and decrypt it
-      [, authdecryptedidCardCredJson] = await this.authDecrypt(residentWalletHandle, residentGovernmentKey, authcryptedidCardCredJson);
-
       //Resident store ID Card Credential into Resident's wallet
-      await indy.proverStoreCredential(residentWalletHandle, null, idCardCredRequestMetadataJson,
-        authdecryptedidCardCredJson, governmentIdCardCredDef, null);
 
       //Response to client
       res.status(200).json({
@@ -169,11 +147,7 @@ export default class GovernmentCtrl extends BaseCtrl {
       governmentWalletHandle = await indy.openWallet(governmentWalletConfig, governmentWalletCredentials);
 
       //Get schema from ledger
-      [schemaId, schema] = await this.getSchema(poolHandle, governmentDid, req.body.schemaId);
-
       //Create and send credential to ledger
-      [governmentIdCardCredDefId, governmentIdCardCredDefJson] = await indy.issuerCreateAndStoreCredentialDef(governmentWalletHandle, governmentDid, schema, 'TAG1', 'CL', '{"support_revocation": false}');
-      await this.sendCredDef(poolHandle, governmentWalletHandle, governmentDid, governmentIdCardCredDefJson);
 
       //Response to client
       res.status(200).json({
