@@ -192,10 +192,7 @@ export default class GovernmentCtrl extends BaseCtrl {
       governmentWalletHandle = await indy.openWallet(governmentWalletConfig, governmentWalletCredentials);
 
       //Create a schema
-      [schemaId, schema] = await indy.issuerCreateSchema(req.body.governmentDid, 'id-card', '1.0', req.body.schema);
-
       //Send schema to ledger
-      await this.sendSchema(poolHandle, governmentWalletHandle, req.body.governmentDid, schema);
 
       //Response to client
       res.status(200).json({
