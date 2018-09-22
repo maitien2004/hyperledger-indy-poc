@@ -161,7 +161,7 @@ export default class BankCtrl extends BaseCtrl {
 
       //Bank get Schemas, Credential Definitions and Revocation Registries from Ledger required for Proof verifying
       let revocRefDefsJson, revocRegsJson;
-      [schemasJson, credDefsJson, ,] = await this.verifierGetEntitiesFromLedger(poolHandle, req.body.bankDid, decryptedIdCardApplicationProof['identifiers'], 'Bank');
+      [schemasJson, credDefsJson, revocRefDefsJson, revocRegsJson] = await this.verifierGetEntitiesFromLedger(poolHandle, req.body.bankDid, decryptedIdCardApplicationProof['identifiers'], 'Bank');
 
       //Validate data from client provided and data from government provided
       let decryptedData = decryptedIdCardApplicationProof['requested_proof'];
