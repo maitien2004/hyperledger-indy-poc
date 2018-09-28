@@ -58,20 +58,121 @@ export default class BankCtrl extends BaseCtrl {
       //Bank to make a connection with resident
       let [, bankResidentKey, , residentBankKey, bankResidentConnectionResponse] = await this.onboarding(poolHandle, bankName, bankWalletHandle, req.body.bankDid, req.body.data.name, residentWalletHandle, residentWalletConfig, residentWalletCredentials);
 
+      let IdCardApplicationProofRequestJson = {
+        'nonce': '1432422343242122312411212',
+        'name': 'Loan-Application',
+        'version': '0.1',
+        'requested_attributes': {
+          'attr1_referent': {
+            'name': 'id',
+            'restrictions': [{ 'cred_def_id': req.body.governmentIdCardCredDefId }]
+          },
+          'attr2_referent': {
+            'name': 'name',
+            'restrictions': [{ 'cred_def_id': req.body.governmentIdCardCredDefId }]
+          },
+          'attr3_referent': {
+            'name': 'dob'
+          },
+          'attr4_referent': {
+            'name': 'gender'
+          },
+          'attr5_referent': {
+            'name': 'created_at',
+            'restrictions': [{ 'cred_def_id': req.body.governmentIdCardCredDefId }]
+          }
+        },
+        'requested_predicates': {
+          'predicate1_referent': {
+            'name': 'status',
+            'p_type': '>=',
+            'p_value': 1,
+            'restrictions': [{ 'cred_def_id': req.body.governmentIdCardCredDefId }]
+          }
+        }
+      };
+
       //Bank get DID key
+      let residentBankVerkey = await indy.keyForDid(poolHandle, bankWalletHandle, bankResidentConnectionResponse['did']);
+
       //Bank encrypt Loan Application Proof Request and send it to Resident
+      let authcryptedIdCardApplicationProofRequestJson = await indy.cryptoAuthCrypt(bankWalletHandle, bankResidentKey, residentBankVerkey, Buffer.from(JSON.stringify(IdCardApplicationProofRequestJson), 'utf8'));
 
       //Resident received Loan Application Proof Request and decrypt it
+      let [bankResidentVerkey, authdecryptedIdCardApplicationProofRequestJson] = await this.authDecrypt(residentWalletHandle, residentBankKey, authcryptedIdCardApplicationProofRequestJson);
+
       //Resident search credential for Loan Application Proof Request
+      let searchForIdCardApplicationProofRequest = await indy.proverSearchCredentialsForProofReq(residentWalletHandle, authdecryptedIdCardApplicationProofRequestJson, null)
+      let credsForIdCardApplicationProofRequest = await indy.proverFetchCredentialsForProofReq(searchForIdCardApplicationProofRequest, 'attr1_referent', 100)
+      let credForAttr1 = credsForIdCardApplicationProofRequest[0]['cred_info'];
+
+      await indy.proverFetchCredentialsForProofReq(searchForIdCardApplicationProofRequest, 'attr2_referent', 100);
+      let credForAttr2 = credsForIdCardApplicationProofRequest[0]['cred_info'];
+
+      await indy.proverFetchCredentialsForProofReq(searchForIdCardApplicationProofRequest, 'attr3_referent', 100)
+      let credForAttr3 = credsForIdCardApplicationProofRequest[0]['cred_info'];
+
+      await indy.proverFetchCredentialsForProofReq(searchForIdCardApplicationProofRequest, 'attr4_referent', 100)
+      let credForAttr4 = credsForIdCardApplicationProofRequest[0]['cred_info'];
+
+      await indy.proverFetchCredentialsForProofReq(searchForIdCardApplicationProofRequest, 'attr5_referent', 100)
+      let credForAttr5 = credsForIdCardApplicationProofRequest[0]['cred_info'];
+
+      await indy.proverFetchCredentialsForProofReq(searchForIdCardApplicationProofRequest, 'predicate1_referent', 100)
+      let credForPredicate1 = credsForIdCardApplicationProofRequest[0]['cred_info'];
+
+      await indy.proverCloseCredentialsSearchForProofReq(searchForIdCardApplicationProofRequest);
+
+      let credsForIdCardApplicationProof = {};
+      credsForIdCardApplicationProof[`${credForAttr1['referent']}`] = credForAttr1;
+      credsForIdCardApplicationProof[`${credForAttr2['referent']}`] = credForAttr2;
+      credsForIdCardApplicationProof[`${credForAttr3['referent']}`] = credForAttr3;
+      credsForIdCardApplicationProof[`${credForAttr4['referent']}`] = credForAttr4;
+      credsForIdCardApplicationProof[`${credForAttr5['referent']}`] = credForAttr5;
+      credsForIdCardApplicationProof[`${credForPredicate1['referent']}`] = credForPredicate1;
 
       //Resident get Claim Definition from ledger
+      let schemasJson, credDefsJson, revocStatesJson;
+      //TODO
+
+      let IdCardApplicationRequestedCredsJson = {
+        'self_attested_attributes': {
+          'attr3_referent': req.body.data.dob,
+          'attr4_referent': req.body.data.gender
+        },
+        'requested_attributes': {
+          'attr1_referent': { 'cred_id': credForAttr1['referent'], 'revealed': true },
+          'attr2_referent': { 'cred_id': credForAttr2['referent'], 'revealed': true },
+          'attr5_referent': { 'cred_id': credForAttr5['referent'], 'revealed': true }
+        },
+        'requested_predicates': { 'predicate1_referent': { 'cred_id': credForPredicate1['referent'] } }
+      };
+
       //Resident create Loan Application Proof
+      let IdCardApplicationProofJson;
+      //TODO
+
       //Resident encrypt Loan Application Proof and send it to Bank
+      let authcryptedIdCardApplicationProofJson = await indy.cryptoAuthCrypt(residentWalletHandle, residentBankKey, bankResidentVerkey, Buffer.from(JSON.stringify(IdCardApplicationProofJson), 'utf8'));
 
       //Bank received Loan Application Proof and decrypt it
+      let decryptedIdCardApplicationProofJson, decryptedIdCardApplicationProof;
+      [, decryptedIdCardApplicationProofJson, decryptedIdCardApplicationProof] = await this.authDecrypt(bankWalletHandle, bankResidentKey, authcryptedIdCardApplicationProofJson);
+
       //Bank get Schemas, Credential Definitions and Revocation Registries from Ledger required for Proof verifying
-      //Bank verify data from client provided and data from government provided
+      let revocRefDefsJson, revocRegsJson;
+      //TODO
+
+      //Validate data from client provided and data from government provided
+      let decryptedData = decryptedIdCardApplicationProof['requested_proof'];
+      assert(req.body.data.id === decryptedData['revealed_attrs']['attr1_referent']['raw']);
+      assert(req.body.data.name === decryptedData['revealed_attrs']['attr2_referent']['raw']);
+      assert(req.body.data.dob === decryptedData['self_attested_attrs']['attr3_referent']);
+      assert(req.body.data.gender === decryptedData['self_attested_attrs']['attr4_referent']);
+      assert(req.body.data.created_at === decryptedData['revealed_attrs']['attr5_referent']['raw']);
+
       //Bank verify Loan Application Proof from Resident
+      //TODO
 
       //Response to client
       res.status(200).json();
